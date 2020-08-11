@@ -34,6 +34,8 @@
 #include <hardware/audio.h>
 #include <tinyalsa/asoundlib.h>
 
+#include <cutils/properties.h>
+
 #define PCM_CARD 0
 #define PCM_DEVICE 0
 
@@ -86,6 +88,14 @@ struct stub_stream_in {
     size_t frame_count;
 };
 
+static int get_pcm_card() {
+    return property_get_int32("audio.pcm.card", PCM_CARD);
+}
+
+static int get_pcm_device() {
+    return property_get_int32("audio.pcm.device", PCM_DEVICE);
+}
+
 static int check_output_config(struct audio_config *audio_config) {
     uint32_t sample_rate = audio_config->sample_rate;
     audio_format_t format = audio_config->format;
@@ -104,7 +114,7 @@ static int check_output_config(struct audio_config *audio_config) {
 static int start_output_stream(struct stub_stream_out *out)
 {
     ALOGV("start_output_stream");
-    out->pcm = pcm_open(PCM_CARD, PCM_DEVICE, PCM_OUT, out->config);
+    out->pcm = pcm_open(get_pcm_card(), get_pcm_device(), PCM_OUT, out->config);
     if (out->pcm == NULL) {
         return -ENOMEM;
     }
@@ -662,7 +672,7 @@ static int adev_close(hw_device_t *device)
 static void set_mixer() {
     // Set default mixer ctls
     // Enable channels and set volume
-    struct mixer* mixer = mixer_open(PCM_CARD);
+    struct mixer* mixer = mixer_open(get_pcm_card());
     struct mixer_ctl *ctl;
     for (int i = 0; i < (int)mixer_get_num_ctls(mixer); i++) {
         ctl = mixer_get_ctl(mixer, i);
